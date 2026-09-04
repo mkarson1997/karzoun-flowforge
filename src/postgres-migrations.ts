@@ -1,8 +1,29 @@
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
+
+const MIGRATION_LOCK_NAME = "karzoun-flowforge:migrations";
 
 export async function applyPostgresMigrations(pool: Pool): Promise<void> {
-  await pool.query(INITIAL_MIGRATION_SQL);
-  await pool.query(WORKER_MIGRATION_SQL);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [MIGRATION_LOCK_NAME]);
+    await client.query(INITIAL_MIGRATION_SQL);
+    await client.query(WORKER_MIGRATION_SQL);
+    await client.query("COMMIT");
+  } catch (error) {
+    await rollbackQuietly(client);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function rollbackQuietly(client: PoolClient): Promise<void> {
+  try {
+    await client.query("ROLLBACK");
+  } catch {
+    // Preserve the original migration failure.
+  }
 }
 
 export const INITIAL_MIGRATION_SQL = `
