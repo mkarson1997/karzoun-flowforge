@@ -41,8 +41,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install dependencies from lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Typecheck
         run: npm run typecheck
