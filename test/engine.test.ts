@@ -20,6 +20,118 @@ describe("FlowForge", () => {
     expect(result.context.double).toBe(84);
   });
 
+  it("executes independent DAG steps concurrently", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let started = 0;
+    let bothStarted!: () => void;
+    const bothStartedPromise = new Promise<void>((resolve) => {
+      bothStarted = resolve;
+    });
+    const markStarted = (): void => {
+      started += 1;
+      if (started === 2) bothStarted();
+    };
+
+    const forge = new FlowForge();
+    const execution = forge.run({
+      id: "parallel",
+      steps: [
+        {
+          id: "left",
+          run: async () => {
+            markStarted();
+            await gate;
+            return "L";
+          },
+        },
+        {
+          id: "right",
+          run: async () => {
+            markStarted();
+            await gate;
+            return "R";
+          },
+        },
+      ],
+    });
+
+    await Promise.race([
+      bothStartedPromise,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("steps did not start concurrently")), 250)),
+    ]);
+    expect(started).toBe(2);
+
+    release();
+    const result = await execution;
+    expect(result.status).toBe("completed");
+    expect(result.context).toMatchObject({ left: "L", right: "R" });
+  });
+
+  it("waits for every fan-out dependency before starting a fan-in step", async () => {
+    const completed: string[] = [];
+    const forge = new FlowForge();
+
+    const result = await forge.run({
+      id: "fan-in",
+      steps: [
+        {
+          id: "left",
+          run: async () => {
+            await new Promise((resolve) => setTimeout(resolve, 15));
+            completed.push("left");
+            return 20;
+          },
+        },
+        {
+          id: "right",
+          run: async () => {
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            completed.push("right");
+            return 22;
+          },
+        },
+        {
+          id: "sum",
+          dependsOn: ["left", "right"],
+          run: ({ context }) => {
+            expect(completed).toHaveLength(2);
+            return (context.left as number) + (context.right as number);
+          },
+        },
+      ],
+    });
+
+    expect(result.context.sum).toBe(42);
+  });
+
+  it("finishes the active layer but never schedules later layers after a failure", async () => {
+    const sibling = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return "safe";
+    });
+    const downstream = vi.fn(() => "must-not-run");
+    const forge = new FlowForge();
+
+    const result = await forge.run({
+      id: "layer-failure",
+      steps: [
+        { id: "broken", run: () => Promise.reject(new Error("boom")) },
+        { id: "sibling", run: sibling },
+        { id: "downstream", dependsOn: ["sibling"], run: downstream },
+      ],
+    });
+
+    expect(result.status).toBe("failed");
+    expect(result.steps.broken?.status).toBe("failed");
+    expect(result.steps.sibling?.status).toBe("completed");
+    expect(result.context.sibling).toBe("safe");
+    expect(sibling).toHaveBeenCalledTimes(1);
+    expect(downstream).not.toHaveBeenCalled();
+  });
+
   it("retries failed steps using the configured policy", async () => {
     let calls = 0;
     const sleep = vi.fn(async () => undefined);

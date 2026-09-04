@@ -13,7 +13,7 @@ FlowForge is being built in narrow, verifiable layers. Each milestone should rem
 - [x] In-memory state store
 - [x] Structured execution events
 - [x] Run history API
-- [ ] Parallel execution of independent steps
+- [x] Parallel execution of independent steps
 - [ ] Explicit cancellation API
 
 ## v0.2 Durable Runtime

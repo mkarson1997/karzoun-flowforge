@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { StepTimeoutError } from "./errors.js";
-import { topologicalOrder } from "./graph.js";
+import { topologicalLayers } from "./graph.js";
 import { InMemoryStateStore, type StateStore } from "./state-store.js";
 import type {
   EventListener,
@@ -38,7 +38,7 @@ export class FlowForge {
   }
 
   async run(workflow: WorkflowDefinition): Promise<WorkflowResult> {
-    const order = topologicalOrder(workflow);
+    const layers = topologicalLayers(workflow);
     const byId = new Map(workflow.steps.map((step) => [step.id, step]));
     const runId = this.#makeRunId();
     const startedAt = this.#now().toISOString();
@@ -47,14 +47,30 @@ export class FlowForge {
 
     await this.#emit({ type: "workflow.started", workflowId: workflow.id, runId, timestamp: startedAt });
 
-    for (const stepId of order) {
-      const step = byId.get(stepId);
-      if (!step) throw new Error(`Invariant violation: missing step "${stepId}"`);
+    for (const layer of layers) {
+      const layerContext = Object.freeze({ ...context });
+      const outcomes = await Promise.all(
+        layer.map(async (stepId) => {
+          const step = byId.get(stepId);
+          if (!step) throw new Error(`Invariant violation: missing step "${stepId}"`);
+          const outcome = await this.#executeStep(workflow.id, runId, step, layerContext);
+          return { stepId, outcome };
+        }),
+      );
 
-      const outcome = await this.#executeStep(workflow.id, runId, step, context);
-      steps[stepId] = outcome;
+      const failedStepIds: string[] = [];
+      for (const { stepId, outcome } of outcomes) {
+        steps[stepId] = outcome;
+        if (outcome.status === "failed") {
+          failedStepIds.push(stepId);
+        } else {
+          context[stepId] = outcome.output;
+        }
+      }
 
-      if (outcome.status === "failed") {
+      if (failedStepIds.length > 0) {
+        const firstFailedStepId = failedStepIds[0];
+        const firstFailure = firstFailedStepId ? steps[firstFailedStepId] : undefined;
         const result = this.#makeResult(workflow.id, runId, startedAt, "failed", steps, context);
         await this.#store.saveRun(result);
         await this.#emit({
@@ -62,13 +78,14 @@ export class FlowForge {
           workflowId: workflow.id,
           runId,
           timestamp: result.completedAt,
-          stepId,
-          metadata: { error: outcome.error?.message ?? "Unknown error" },
+          ...(firstFailedStepId ? { stepId: firstFailedStepId } : {}),
+          metadata: {
+            failedStepIds,
+            error: firstFailure?.error?.message ?? "Unknown error",
+          },
         });
         return result;
       }
-
-      context[stepId] = outcome.output;
     }
 
     const result = this.#makeResult(workflow.id, runId, startedAt, "completed", steps, context);
@@ -85,7 +102,7 @@ export class FlowForge {
     workflowId: string,
     runId: string,
     step: StepDefinition,
-    context: Record<string, unknown>,
+    context: Readonly<Record<string, unknown>>,
   ): Promise<StepResult> {
     const idempotencyInput = { workflowId, runId, stepId: step.id, context };
     const userKey =
@@ -173,7 +190,7 @@ export class FlowForge {
     runId: string,
     step: StepDefinition,
     attempt: number,
-    context: Record<string, unknown>,
+    context: Readonly<Record<string, unknown>>,
   ): Promise<unknown> {
     const controller = new AbortController();
     const input: StepRunInput = {

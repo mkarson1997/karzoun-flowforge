@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { topologicalOrder, WorkflowValidationError } from "../src/index.js";
+import { topologicalLayers, topologicalOrder, WorkflowValidationError } from "../src/index.js";
 
-describe("topologicalOrder", () => {
+describe("workflow graph", () => {
   it("orders dependencies before dependants", () => {
     expect(
       topologicalOrder({
@@ -13,6 +13,20 @@ describe("topologicalOrder", () => {
         ],
       }),
     ).toEqual(["compile", "test", "deploy"]);
+  });
+
+  it("groups independent work into deterministic execution layers", () => {
+    expect(
+      topologicalLayers({
+        id: "pipeline",
+        steps: [
+          { id: "compile", run: () => undefined },
+          { id: "lint", run: () => undefined },
+          { id: "test", dependsOn: ["compile", "lint"], run: () => undefined },
+          { id: "package", dependsOn: ["test"], run: () => undefined },
+        ],
+      }),
+    ).toEqual([["compile", "lint"], ["test"], ["package"]]);
   });
 
   it("rejects cycles", () => {

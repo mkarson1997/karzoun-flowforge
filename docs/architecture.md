@@ -18,13 +18,14 @@ WorkflowDefinition
        v
 +--------------------+
 | deterministic      |
-| topological order  |
+| execution layers   |
 +--------------------+
        |
        v
 +--------------------+       +-------------------+
-| step executor      |------>| execution events  |
-| - retry            |       +-------------------+
+| parallel step      |------>| execution events  |
+| executor per layer |       +-------------------+
+| - retry            |
 | - backoff          |
 | - timeout          |
 | - AbortSignal      |
@@ -48,6 +49,14 @@ A workflow is a stable identifier plus steps. Each step may depend on previous s
 ### Graph validation
 
 Validation happens before any work begins. Unknown dependencies, duplicate ids, self-dependencies, and cycles are rejected before side effects can occur.
+
+### Parallel scheduling
+
+The validated DAG is converted into deterministic execution layers. Every step in a layer has all of its dependencies satisfied by earlier layers, so independent steps in the same layer start concurrently with the same immutable context snapshot.
+
+FlowForge currently uses a layer barrier: the next layer starts only after every step in the active layer settles successfully. This makes fan-out/fan-in behavior deterministic and prevents downstream work from observing partial sibling state.
+
+If any step in a layer fails after exhausting retries, FlowForge still waits for the other already-started steps in that layer to settle. Successful sibling outputs remain visible in the failed run result, but no later layer is scheduled. This avoids abandoning active promises while preserving a clear failure boundary.
 
 ### Retry behavior
 
