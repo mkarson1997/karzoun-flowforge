@@ -88,21 +88,22 @@ export class FlowForge {
     context: Record<string, unknown>,
   ): Promise<StepResult> {
     const idempotencyInput = { workflowId, runId, stepId: step.id, context };
-    const idempotencyKey =
+    const userKey =
       typeof step.idempotencyKey === "function" ? step.idempotencyKey(idempotencyInput) : step.idempotencyKey;
+    const storageKey = userKey ? idempotencyStorageKey(workflowId, step.id, userKey) : undefined;
 
-    if (idempotencyKey) {
-      const cached = await this.#store.getIdempotentResult(idempotencyKey);
-      if (cached !== undefined) {
+    if (storageKey) {
+      const cached = await this.#store.getIdempotentResult(storageKey);
+      if (cached.found) {
         await this.#emit({
           type: "step.reused",
           workflowId,
           runId,
           stepId: step.id,
           timestamp: this.#now().toISOString(),
-          metadata: { idempotencyKey },
+          metadata: { idempotencyKey: userKey },
         });
-        return { id: step.id, status: "reused", attempts: 0, output: cached };
+        return { id: step.id, status: "reused", attempts: 0, output: cached.value };
       }
     }
 
@@ -121,7 +122,7 @@ export class FlowForge {
 
       try {
         const output = await this.#runAttempt(workflowId, runId, step, attempt, context);
-        if (idempotencyKey) await this.#store.setIdempotentResult(idempotencyKey, output);
+        if (storageKey) await this.#store.setIdempotentResult(storageKey, output);
         await this.#emit({
           type: "step.completed",
           workflowId,
@@ -234,15 +235,29 @@ interface NormalizedRetry {
 
 function normalizeRetry(policy: RetryPolicy | undefined): NormalizedRetry {
   return {
-    attempts: Math.max(1, Math.floor(policy?.attempts ?? 1)),
-    backoffMs: Math.max(0, policy?.backoffMs ?? 0),
-    factor: Math.max(1, policy?.factor ?? 2),
-    maxBackoffMs: Math.max(0, policy?.maxBackoffMs ?? Number.MAX_SAFE_INTEGER),
+    attempts: finiteIntegerAtLeastOne(policy?.attempts, 1),
+    backoffMs: finiteNonNegative(policy?.backoffMs, 0),
+    factor: Math.max(1, finiteNonNegative(policy?.factor, 2)),
+    maxBackoffMs: finiteNonNegative(policy?.maxBackoffMs, Number.MAX_SAFE_INTEGER),
   };
 }
 
 function retryDelay(policy: NormalizedRetry, failedAttempt: number): number {
   return Math.min(policy.maxBackoffMs, policy.backoffMs * policy.factor ** (failedAttempt - 1));
+}
+
+function finiteIntegerAtLeastOne(value: number | undefined, fallback: number): number {
+  if (value === undefined || !Number.isFinite(value)) return fallback;
+  return Math.max(1, Math.floor(value));
+}
+
+function finiteNonNegative(value: number | undefined, fallback: number): number {
+  if (value === undefined || !Number.isFinite(value)) return fallback;
+  return Math.max(0, value);
+}
+
+function idempotencyStorageKey(workflowId: string, stepId: string, userKey: string): string {
+  return JSON.stringify([workflowId, stepId, userKey]);
 }
 
 function serializeError(error: unknown): SerializedError {

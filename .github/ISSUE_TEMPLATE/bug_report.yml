@@ -1,0 +1,40 @@
+name: Bug report
+description: Report reproducible incorrect FlowForge behavior
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping make FlowForge more reliable.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include a small workflow or repository that reproduces the problem.
+      render: ts
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: FlowForge version or commit
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Logs, stack traces, persistence adapter details, or other relevant information.

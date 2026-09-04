@@ -63,6 +63,39 @@ describe("FlowForge", () => {
     expect(run).toHaveBeenCalledTimes(1);
   });
 
+  it("reuses undefined idempotent results instead of treating them as a cache miss", async () => {
+    const store = new InMemoryStateStore();
+    const run = vi.fn(() => undefined);
+    const forge = new FlowForge({ store });
+    const workflow = {
+      id: "notification",
+      steps: [{ id: "send", idempotencyKey: "message:42", run }],
+    } as const;
+
+    await forge.run(workflow);
+    const second = await forge.run(workflow);
+
+    expect(second.steps.send?.status).toBe("reused");
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("namespaces idempotency keys by workflow and step", async () => {
+    const store = new InMemoryStateStore();
+    const forge = new FlowForge({ store });
+
+    const first = await forge.run({
+      id: "workflow-a",
+      steps: [{ id: "step", idempotencyKey: "same-key", run: () => "A" }],
+    });
+    const second = await forge.run({
+      id: "workflow-b",
+      steps: [{ id: "step", idempotencyKey: "same-key", run: () => "B" }],
+    });
+
+    expect(first.context.step).toBe("A");
+    expect(second.context.step).toBe("B");
+  });
+
   it("fails a workflow when a step exceeds its timeout", async () => {
     const forge = new FlowForge();
     const result = await forge.run({
@@ -78,5 +111,18 @@ describe("FlowForge", () => {
 
     expect(result.status).toBe("failed");
     expect(result.steps.slow?.error?.name).toBe("StepTimeoutError");
+  });
+
+  it("emits an inspectable execution event sequence", async () => {
+    const events: string[] = [];
+    const forge = new FlowForge({
+      onEvent: (event) => {
+        events.push(event.type);
+      },
+    });
+
+    await forge.run({ id: "events", steps: [{ id: "one", run: () => 1 }] });
+
+    expect(events).toEqual(["workflow.started", "step.started", "step.completed", "workflow.completed"]);
   });
 });

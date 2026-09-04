@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/mkarson1997/karzoun-flowforge/security
+    about: Please avoid publishing exploitable vulnerability details in a normal public issue.
