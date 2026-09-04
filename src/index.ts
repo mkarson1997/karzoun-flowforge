@@ -7,6 +7,15 @@ export {
 } from "./durable-worker.js";
 export { FlowForge, type FlowForgeOptions } from "./engine.js";
 export { StepTimeoutError, WorkflowValidationError } from "./errors.js";
+export {
+  GitHubApiClient,
+  GitHubApiError,
+  type GitHubApiClientOptions,
+  type GitHubRepositorySummary,
+  type GitHubWorkflowRunSummary,
+  type GitHubWorkflowRunsResponse,
+  verifyGitHubWebhookSignature,
+} from "./github-app.js";
 export { topologicalLayers, topologicalOrder } from "./graph.js";
 export { createOperationalHandler, type OperationalHandlerOptions, type ReadinessCheck } from "./operations.js";
 export { INITIAL_MIGRATION_SQL, WORKER_MIGRATION_SQL } from "./postgres-migrations.js";
