@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use Karzoun FlowForge in engineering work, research, or a publication, please cite the project using this metadata."
+title: "Karzoun FlowForge"
+type: software
+authors:
+  - family-names: Karzoun
+    given-names: Mahmoud
+repository-code: "https://github.com/mkarson1997/karzoun-flowforge"
+url: "https://github.com/mkarson1997/karzoun-flowforge"
+version: 0.1.0
+date-released: 2026-09-04
+license: Apache-2.0
+keywords:
+  - workflow-engine
+  - distributed-systems
+  - typescript
+  - postgresql
+  - opentelemetry
+preferred-citation:
+  type: software
+  authors:
+    - family-names: Karzoun
+      given-names: Mahmoud
+  title: "Karzoun FlowForge"
+  version: 0.1.0
+  year: 2026
+  url: "https://github.com/mkarson1997/karzoun-flowforge"
