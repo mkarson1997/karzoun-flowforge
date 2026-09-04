@@ -24,7 +24,7 @@ export interface FlowForgeOptions {
 
 export class FlowForge {
   readonly #store: StateStore;
-  readonly #onEvent?: EventListener;
+  readonly #onEvent: EventListener | undefined;
   readonly #now: () => Date;
   readonly #makeRunId: () => string;
   readonly #sleep: (ms: number) => Promise<void>;
