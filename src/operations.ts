@@ -30,7 +30,10 @@ async function handleOperationalRequest(
     return;
   }
 
-  const path = new URL(request.url ?? "/", "http://flowforge.local").pathname;
+  // The base URL is used only to parse a relative request target. No network request is made.
+  // Keep it HTTPS so static security analysis does not mistake the parser sentinel for a
+  // clear-text transport dependency.
+  const path = new URL(request.url ?? "/", "https://flowforge.invalid").pathname;
 
   if (path === "/healthz") {
     response.statusCode = 200;
