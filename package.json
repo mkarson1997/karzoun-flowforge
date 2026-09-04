@@ -11,7 +11,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": ["dist", "migrations", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -27,15 +27,20 @@
     "jobs",
     "dag",
     "orchestration",
-    "typescript"
+    "typescript",
+    "postgresql"
   ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mkarson1997/karzoun-flowforge.git"
   },
+  "dependencies": {
+    "pg": "^8.23.0"
+  },
   "devDependencies": {
     "@types/node": "^22.15.30",
+    "@types/pg": "^8.23.1",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

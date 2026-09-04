@@ -18,12 +18,12 @@ FlowForge is being built in narrow, verifiable layers. Each milestone should rem
 
 ## v0.2 Durable Runtime
 
-- [ ] PostgreSQL state store
+- [x] PostgreSQL state store
 - [ ] Durable leases and worker heartbeats
 - [ ] Crash recovery
 - [ ] Dead-letter state
 - [ ] Execution resume semantics
-- [ ] Database migrations
+- [x] Database migrations
 
 ## v0.3 Triggers & Workers
 
