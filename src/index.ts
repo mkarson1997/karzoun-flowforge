@@ -1,11 +1,23 @@
+export {
+  DurableWorker,
+  type DurableTaskHandler,
+  type DurableTaskHandlerInput,
+  type DurableWorkerOptions,
+  type DurableWorkerRunResult,
+} from "./durable-worker.js";
 export { FlowForge, type FlowForgeOptions } from "./engine.js";
 export { StepTimeoutError, WorkflowValidationError } from "./errors.js";
 export { topologicalLayers, topologicalOrder } from "./graph.js";
+export { INITIAL_MIGRATION_SQL, WORKER_MIGRATION_SQL } from "./postgres-migrations.js";
+export { PostgresStateStore, type PostgresStateStoreOptions } from "./postgres-state-store.js";
 export {
-  INITIAL_MIGRATION_SQL,
-  PostgresStateStore,
-  type PostgresStateStoreOptions,
-} from "./postgres-state-store.js";
+  PostgresWorkQueue,
+  type ClaimedWorkItem,
+  type EnqueueWorkItemInput,
+  type PostgresWorkQueueOptions,
+  type WorkItem,
+  type WorkItemStatus,
+} from "./postgres-work-queue.js";
 export { InMemoryStateStore, type IdempotentLookup, type StateStore } from "./state-store.js";
 export type {
   EventListener,

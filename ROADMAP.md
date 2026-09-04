@@ -19,15 +19,15 @@ FlowForge is being built in narrow, verifiable layers. Each milestone should rem
 ## v0.2 Durable Runtime
 
 - [x] PostgreSQL state store
-- [ ] Durable leases and worker heartbeats
-- [ ] Crash recovery
-- [ ] Dead-letter state
-- [ ] Execution resume semantics
+- [x] Durable leases and worker heartbeats
+- [x] Crash recovery
+- [x] Dead-letter state
+- [ ] Full workflow-to-worker scheduling integration
 - [x] Database migrations
 
 ## v0.3 Triggers & Workers
 
-- [ ] Worker process
+- [x] Worker runtime and task-handler registry
 - [ ] Cron triggers
 - [ ] Signed webhooks
 - [ ] Event triggers
