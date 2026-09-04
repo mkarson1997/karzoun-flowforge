@@ -38,9 +38,9 @@ FlowForge is being built in narrow, verifiable layers. Each milestone should rem
 
 - [ ] REST API
 - [ ] CLI
-- [ ] OpenTelemetry traces and metrics
-- [ ] Structured logs
-- [ ] Health/readiness endpoints
+- [x] OpenTelemetry traces and metrics
+- [x] Structured logs
+- [x] Health/readiness endpoints
 - [ ] Docker images and Compose example
 
 ## v0.5 Ecosystem

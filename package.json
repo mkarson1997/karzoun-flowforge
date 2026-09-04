@@ -28,7 +28,9 @@
     "dag",
     "orchestration",
     "typescript",
-    "postgresql"
+    "postgresql",
+    "opentelemetry",
+    "distributed-systems"
   ],
   "license": "Apache-2.0",
   "repository": {
@@ -36,6 +38,7 @@
     "url": "git+https://github.com/mkarson1997/karzoun-flowforge.git"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
     "pg": "^8.23.0"
   },
   "devDependencies": {

@@ -82,6 +82,7 @@ export class FlowForge {
           metadata: {
             failedStepIds,
             error: firstFailure?.error?.message ?? "Unknown error",
+            errorName: firstFailure?.error?.name ?? "Error",
           },
         });
         return result;
@@ -160,7 +161,7 @@ export class FlowForge {
             stepId: step.id,
             attempt,
             timestamp: this.#now().toISOString(),
-            metadata: { delayMs, error: lastError.message },
+            metadata: { delayMs, error: lastError.message, errorName: lastError.name },
           });
           if (delayMs > 0) await this.#sleep(delayMs);
         }
@@ -174,7 +175,10 @@ export class FlowForge {
       stepId: step.id,
       attempt: retry.attempts,
       timestamp: this.#now().toISOString(),
-      metadata: { error: lastError?.message ?? "Unknown error" },
+      metadata: {
+        error: lastError?.message ?? "Unknown error",
+        errorName: lastError?.name ?? "Error",
+      },
     });
 
     return {
