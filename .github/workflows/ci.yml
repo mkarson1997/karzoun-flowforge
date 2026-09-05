@@ -52,3 +52,20 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  ci-gate:
+    name: CI Gate
+    if: ${{ always() }}
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require successful verification matrix
+        env:
+          VERIFY_RESULT: ${{ needs.verify.result }}
+        run: |
+          if [ "$VERIFY_RESULT" != "success" ]; then
+            echo "Verification matrix result: $VERIFY_RESULT"
+            exit 1
+          fi
+          echo "Verification matrix passed."
