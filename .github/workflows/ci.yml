@@ -60,12 +60,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Require successful verification matrix
-        env:
-          VERIFY_RESULT: ${{ needs.verify.result }}
-        run: |
-          if [ "$VERIFY_RESULT" != "success" ]; then
-            echo "Verification matrix result: $VERIFY_RESULT"
-            exit 1
-          fi
-          echo "Verification matrix passed."
+      - name: Confirm successful verification matrix
+        if: ${{ needs.verify.result == 'success' }}
+        run: echo "Verification matrix passed."
+
+      - name: Fail when verification did not succeed
+        if: ${{ needs.verify.result != 'success' }}
+        run: exit 1
