@@ -1,0 +1,35 @@
+name: Temporary Sonar diagnostics
+
+on:
+  push:
+    branches: [chore/stable-ci-gate]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Query SonarCloud pull-request issues
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://sonarcloud.io/api/issues/search?componentKeys=mkarson1997_karzoun-flowforge&pullRequest=14&resolved=false&ps=100' -o sonar.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('sonar.json').read_text())
+          issues = data.get('issues', [])
+          print(f'issues={len(issues)}')
+          for issue in issues:
+              print('RULE=', issue.get('rule'))
+              print('COMPONENT=', issue.get('component'))
+              print('LINE=', issue.get('line'))
+              print('SEVERITY=', issue.get('severity'))
+              print('TYPE=', issue.get('type'))
+              print('MESSAGE=', issue.get('message'))
+              print('---')
+          PY
