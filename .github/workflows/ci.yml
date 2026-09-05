@@ -6,11 +6,10 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: read
-
 jobs:
   verify:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -52,3 +51,19 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  ci-gate:
+    name: CI Gate
+    if: ${{ always() }}
+    needs: verify
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Confirm successful verification matrix
+        if: ${{ needs.verify.result == 'success' }}
+        run: echo "Verification matrix passed."
+
+      - name: Fail when verification did not succeed
+        if: ${{ needs.verify.result != 'success' }}
+        run: exit 1
