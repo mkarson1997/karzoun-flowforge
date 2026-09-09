@@ -33,6 +33,21 @@ Background jobs become hard when they need dependency ordering, parallelism, ret
 - `/healthz` and `/readyz` operational handlers
 - CI on Node.js 22 and 24 with a real PostgreSQL service
 
+## Engineering proof points
+
+| Area | What the repository demonstrates |
+| --- | --- |
+| Workflow semantics | Typed DAGs, cycle detection, fan-out/fan-in and deterministic layer execution. |
+| Failure handling | Bounded retries, exponential backoff, cooperative timeouts and explicit failed-layer boundaries. |
+| Durable state | PostgreSQL-backed run/idempotency storage behind a portable state-store contract. |
+| Distributed workers | Registration, heartbeats, expiring leases, crash reclaim and stale-worker fencing. |
+| Concurrency correctness | PostgreSQL row locking protects durable retry races. |
+| Idempotency | Workflow/step namespacing and explicit cache-hit semantics, including `undefined` results. |
+| Delivery semantics | At-least-once durable work with external-side-effect idempotency documented as an application responsibility. |
+| Observability | OpenTelemetry spans/metrics, structured logs and health/readiness without making telemetry a correctness dependency. |
+| Verification | Node.js 22/24 matrix with a real PostgreSQL service, typecheck, tests and build behind an aggregate CI gate. |
+| Supply-chain security | Checkout, Node setup and CodeQL actions are pinned to reviewed immutable commit SHAs. |
+
 ## Core example
 
 ```ts
@@ -126,7 +141,7 @@ Workflow Definition
                                 +----------------------+
 ```
 
-For design boundaries and runtime semantics, see [`docs/architecture.md`](docs/architecture.md), [`docs/postgresql.md`](docs/postgresql.md), and [`docs/workers.md`](docs/workers.md).
+For current design boundaries, durable-runtime semantics and failure guarantees, see [`docs/architecture.md`](docs/architecture.md), [`docs/postgresql.md`](docs/postgresql.md), and [`docs/workers.md`](docs/workers.md).
 
 ## Development
 
@@ -153,6 +168,15 @@ PostgreSQL integration tests run when `FLOWFORGE_TEST_DATABASE_URL` is set. GitH
 4. Core execution must not depend on a specific queue or database.
 5. Failure behavior is part of the API, not an afterthought.
 6. Observability must never become a correctness dependency.
+
+## Security and delivery controls
+
+- Node.js 22 and 24 verification runs against a real PostgreSQL service
+- lockfile installation disables package lifecycle scripts during CI dependency installation
+- typecheck, tests and build feed a stable aggregate `CI Gate`
+- CodeQL analyzes JavaScript/TypeScript
+- third-party GitHub Actions are pinned to reviewed immutable commits
+- telemetry intentionally excludes step outputs, task payloads, arbitrary metadata and raw error messages by default
 
 ## Roadmap
 
